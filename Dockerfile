@@ -1,20 +1,72 @@
-FROM richarvey/nginx-php-fpm:1.7.2
+# FROM php:8.2-fpm
 
-COPY . .
+# # Upgrade system packages to reduce vulnerabilities
+# RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+#     zip unzip curl libzip-dev libpng-dev libonig-dev libxml2-dev \
+#     && docker-php-ext-install pdo pdo_mysql zip mbstring exif pcntl \
+#     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Image config
-ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
+# # Install PHP extensions and tools
+# RUN apt-get update && apt-get install -y \
+#     zip unzip curl libzip-dev libpng-dev libonig-dev libxml2-dev \
+#     && docker-php-ext-install pdo pdo_mysql zip mbstring exif pcntl
 
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
+# # Install Composer
+# COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
+# # Set working directory inside container
+# WORKDIR /var/www
 
-CMD ["/start.sh"]
+# # Copy Laravel project into container
+# COPY . .
+
+# # Install dependencies
+# RUN composer install
+
+# # Set permissions
+# RUN chown -R www-data:www-data /var/www \
+#     && chmod -R 755 /var/www/storage
+
+# EXPOSE 9000
+# CMD ["php-fpm"]
+# Use the official PHP image with FPM
+FROM php:8.2-fpm
+
+# Set working directory
+WORKDIR /var/www
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy application source
+COPY . /var/www
+
+# Copy Nginx configuration
+COPY .docker/nginx/default.conf /etc/nginx/sites-available/default
+
+# Copy Supervisor configuration
+COPY .docker/supervisord.conf /etc/supervisord.conf
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www
+
+# Expose port 80
+EXPOSE 80
+
+# Start Supervisor
+CMD ["/usr/bin/supervisord", "-c", "/]()
