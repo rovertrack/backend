@@ -52,14 +52,23 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Install PHP dependencies using Composer
+
+
 # Copy application source
-COPY . /var/www
+
+WORKDIR /var/www
+
+COPY . .
+
 
 # Copy Nginx configuration
 COPY .docker/nginx/default.conf /etc/nginx/sites-available/default
 
 # Copy Supervisor configuration
 COPY .docker/supervisord.conf /etc/supervisord.conf
+
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www \
@@ -69,4 +78,4 @@ RUN chown -R www-data:www-data /var/www \
 EXPOSE 80
 
 # Start Supervisor
-CMD ["/usr/bin/supervisord", "-c", "/]()
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
