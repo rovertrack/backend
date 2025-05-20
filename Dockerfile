@@ -47,35 +47,25 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+    && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install PHP dependencies using Composer
-
-
-# Copy application source
-
-WORKDIR /var/www
-
+# Copy source code
 COPY . .
 
-
-# Copy Nginx configuration
+# Copy Nginx config
 COPY .docker/nginx/default.conf /etc/nginx/sites-available/default
 
-# Copy Supervisor configuration
+# Copy Supervisor config
 COPY .docker/supervisord.conf /etc/supervisord.conf
 
+# Install PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www
+RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www
 
-# Expose port 80
 EXPOSE 80
-
-# Start Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
