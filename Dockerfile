@@ -1,5 +1,5 @@
+# # # # # # # # # # # # # # working locally 
 # FROM php:8.2-fpm
-
 # # Upgrade system packages to reduce vulnerabilities
 # RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 #     zip unzip curl libzip-dev libpng-dev libonig-dev libxml2-dev \
@@ -30,43 +30,71 @@
 # EXPOSE 9000
 # CMD ["php-fpm"]
 # Use the official PHP image with FPM
-FROM php:8.2-fpm
 
-# Set working directory
-WORKDIR /var/www
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    git \
-    curl \
-    zip \
-    unzip \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libpq-dev \          
-    && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# given by ai not working on render
 
-# Copy source code
+
+
+# FROM php:8.2-fpm
+
+# # Set working directory
+# WORKDIR /var/www
+
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y \
+#     nginx \
+#     supervisor \
+#     git \
+#     curl \
+#     zip \
+#     unzip \
+#     libpng-dev \
+#     libonig-dev \
+#     libxml2-dev \
+#     libzip-dev \
+#     libpq-dev \          
+#     && docker-php-ext-install pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip
+
+# # Install Composer
+# COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# # Copy source code
+# COPY . .
+
+# # Copy Nginx config
+# COPY .docker/nginx/default.conf /etc/nginx/sites-available/default
+
+# # Copy Supervisor config
+# COPY .docker/supervisord.conf /etc/supervisord.conf
+
+# # Install PHP dependencies
+# RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+# # Set permissions
+# RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www
+
+# EXPOSE 80
+# CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+FROM richarvey/nginx-php-fpm:latest
+
 COPY . .
 
-# Copy Nginx config
-COPY .docker/nginx/default.conf /etc/nginx/sites-available/default
+# Image config
+ENV SKIP_COMPOSER 1
+ENV WEBROOT /var/www/html/public
+ENV PHP_ERRORS_STDERR 1
+ENV RUN_SCRIPTS 1
+ENV REAL_IP_HEADER 1
 
-# Copy Supervisor config
-COPY .docker/supervisord.conf /etc/supervisord.conf
+# Laravel config
+ENV APP_ENV production
+ENV APP_DEBUG false
+ENV LOG_CHANNEL stderr
 
-# Install PHP dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www
+# Allow composer to run as root
+ENV COMPOSER_ALLOW_SUPERUSER 1
 
-EXPOSE 80
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/start.sh"]
