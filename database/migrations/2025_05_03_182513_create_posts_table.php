@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
-            $table->string('title');   
+            $table->string('title');
             $table->text('content');
             $table->timestamps();
         });
-         Schema::create('nurses', function (Blueprint $table) {
+        Schema::create('nurses', function (Blueprint $table) {
             $table->foreignId('id')->constrained('users')->onDelete('cascade');
             $table->string('qualification');
             $table->integer('experience_years');
@@ -40,8 +40,10 @@ return new class extends Migration
             $table->dateTime('scheduled_time');
             $table->timestamps();
         });
-
-        // Schema::create()
+        Schema::create('service_type', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+        });
     }
 
     /**
@@ -50,5 +52,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('posts');
+        Schema::dropIfExists('nurses');
+        Schema::dropIfExists('services');
+        Schema::dropIfExists('service_type');
+        Schema::dropIfExists('bookings');
     }
 };
